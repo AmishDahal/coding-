@@ -14,7 +14,7 @@
 using namespace std;
 
 void clear_screen() {
-#ifdef _WIN32 // For Windows
+#ifdef _WIN32 // For Windows 
     system("cls");
 #else // For Unix-based systems
     system("clear");
