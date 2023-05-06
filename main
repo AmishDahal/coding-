@@ -14,11 +14,13 @@ int main() {
     cout << ">> ";
     getline(cin, input);
 
-    // Check for "clear" command
-    if (input == "clear") {
-      // Clear the terminal screen
-      system("cls");
-    }
+  #include <iostream>
+
+  // Clear the terminal screen
+  std::cout << "\033[2J\033[H";
+
+
+
     // Check for "help" command
     else if (input == "help") {
       // Display list of available commands and their functions
