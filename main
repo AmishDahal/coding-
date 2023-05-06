@@ -1,8 +1,7 @@
 #include <iostream>
 #include <string>
 #include <cstdlib> // For the "system" function
-#include <unistd.h> // For the "unlink" and "chdir" functions on Unix-based systems
-#include <windows.h> // For the color-changing and directory functions on Windows
+#include <windows.h> // For the color-changing functions on Windows
 
 using namespace std;
 
@@ -17,7 +16,7 @@ int main() {
     // Check for "clear" command
     if (input == "clear") {
       // Clear the terminal screen
-      system("clear");
+      system("cls");
     }
     // Check for "help" command
     else if (input == "help") {
@@ -28,11 +27,12 @@ int main() {
       cout << "  systeminfo - displays information about the system\n";
       cout << "  delete <file> - deletes the specified file\n";
       cout << "  cd <directory> - changes the current working directory\n";
+      cout << "  run <program> - runs the specified program\n";
     }
     // Check for "systeminfo" command
     else if (input == "systeminfo") {
       // Execute shell command to display system information
-      system("uname -a");
+      system("systeminfo");
     }
     // Check for "delete" command
     else if (input.find("delete") == 0) {
@@ -50,18 +50,19 @@ int main() {
     else if (input.find("cd") == 0) {
       // Get the directory to change to
       string directory = input.substr(3); // Remove "cd " from the input string
-      // Use the "chdir" function to change the directory on Unix-based systems
-      int result = chdir(directory.c_str());
-      if (result != 0) {
-        cout << "Error changing directory: " << strerror(errno) << endl;
+      // Use the "SetCurrentDirectory" function to change the directory on Windows
+      if (SetCurrentDirectory(directory.c_str()) == 0) {
+        cout << "Error changing directory: " << GetLastError() << endl;
       }
-      // Use the "SetCurrentDirectory" function to change the directory on Windows systems
-      else {
-        if (!SetCurrentDirectory(directory.c_str())) {
-          cout << "Error changing directory: " << GetLastError() << endl;
-        }
-      }
-    } else {
+    }
+    // Check for "run" command
+    else if (input.find("run") == 0) {
+      // Get the program name to run
+      string program = input.substr(4); // Remove "run " from the input string
+      // Use the "system" function to run the program
+      system(program.c_str());
+    }
+    else {
       // Output response
       HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
       SetConsoleTextAttribute(hConsole, 12); // set color to red
