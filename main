@@ -3,7 +3,7 @@
 #include <cstdlib> // For the "system" function
 #include <unistd.h> // For the "unlink" function on Unix-based systems 
 
-#ifdef _WIN32 // For Windows
+#ifdef _WIN32 // For Windows 
 #include <windows.h> // For the color-changing functions on Windows
 #else // For Unix-based systems
 #define RESET_COLOR "\033[0m"
