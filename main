@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <cstdlib> // For the "system" function
+#include <unistd.h> // For the "unlink" function on Unix-based systems
 #include <windows.h> // For the color-changing functions on Windows
 
 using namespace std;
@@ -27,12 +28,13 @@ int main() {
       cout << "  systeminfo - displays information about the system\n";
       cout << "  delete <file> - deletes the specified file\n";
       cout << "  cd <directory> - changes the current working directory\n";
+      cout << "  color [bw|wb] - changes the console color to black on white or white on black\n";
       cout << "  run <program> - runs the specified program\n";
     }
     // Check for "systeminfo" command
     else if (input == "systeminfo") {
       // Execute shell command to display system information
-      system("systeminfo");
+      system("uname -a");
     }
     // Check for "delete" command
     else if (input.find("delete") == 0) {
@@ -48,28 +50,43 @@ int main() {
     }
     // Check for "cd" command
     else if (input.find("cd") == 0) {
-      // Get the directory to change to
+      // Get the directory name to change to
       string directory = input.substr(3); // Remove "cd " from the input string
-      // Use the "SetCurrentDirectory" function to change the directory on Windows
+      // Use the SetCurrentDirectory function to change the current working directory on Windows
       if (SetCurrentDirectory(directory.c_str()) == 0) {
         cout << "Error changing directory: " << GetLastError() << endl;
       }
     }
-    // Check for "run" command
-    else if (input.find("run") == 0) {
-      // Get the program name to run
-      string program = input.substr(4); // Remove "run " from the input string
-      // Use the "system" function to run the program
-      system(program.c_str());
-    }
-    else {
-      // Output response
-      HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-      SetConsoleTextAttribute(hConsole, 12); // set color to red
-      cout << "I am just a prototype" << endl;
-      SetConsoleTextAttribute(hConsole, 15); // reset color to default
-    }
-  }
+    // Check for "color" command
+    else if (input.find("color") == 0) {
+      // Get the color code to set
+      string colorCode = input.substr(6); // Remove "color " from the input string
+      // Set the console color to black on white if the code is "bw", and to white on black if the code is "wb"
+      if (colorCode == "bw") {
+        HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+        SetConsoleTextAttribute(hConsole, 15); // set foreground color to white and background color to black
+        system("color 0");
+      } else if (colorCode == "wb") {
+        HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+        SetConsoleTextAttribute(hConsole, 240); // set foreground color to black and background color to white
+        system("color F0");
+      } else {
+        cout << "Invalid color
+code specified. Please use 'bw' or 'wb'." << endl;
+}
+}
+// Check for "run" command
+else if (input.find("run") == 0) {
+// Get the program name to run
+string program = input.substr(4); // Remove "run " from the input string
+// Use the system function to execute the program
+system(program.c_str());
+}
+// If no valid command is found, display an error message
+else {
+cout << "Invalid command. Type 'help' for a list of available commands." << endl;
+}
+}
 
-  return 0;
+return 0;
 }
