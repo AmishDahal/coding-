@@ -1,2 +1,2 @@
-# coding-
-just a simple command prompt
+# coding in c-
+ command prompt
