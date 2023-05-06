@@ -1,8 +1,8 @@
 #include <iostream>
 #include <string>
 #include <cstdlib> // For the "system" function
-#include <unistd.h> // For the "unlink" function on Unix-based systems
-#include <windows.h> // For the color-changing functions on Windows
+#include <unistd.h> // For the "unlink" and "chdir" functions on Unix-based systems
+#include <windows.h> // For the color-changing and directory functions on Windows
 
 using namespace std;
 
@@ -14,36 +14,52 @@ int main() {
     cout << ">> ";
     getline(cin, input);
 
-    // Check for commands
+    // Check for "clear" command
     if (input == "clear") {
       // Clear the terminal screen
       system("clear");
-    } else if (input == "help") {
+    }
+    // Check for "help" command
+    else if (input == "help") {
       // Display list of available commands and their functions
       cout << "Available commands:\n";
       cout << "  clear - clears the terminal screen\n";
       cout << "  help - displays this help message\n";
       cout << "  systeminfo - displays information about the system\n";
       cout << "  delete <file> - deletes the specified file\n";
-    } else if (input == "systeminfo") {
+      cout << "  cd <directory> - changes the current working directory\n";
+    }
+    // Check for "systeminfo" command
+    else if (input == "systeminfo") {
       // Execute shell command to display system information
-      int result = system("uname -a");
-      if (result != 0) {
-        cout << "Error executing command" << endl;
-      }
-    } else if (input.find("delete") == 0) {
+      system("uname -a");
+    }
+    // Check for "delete" command
+    else if (input.find("delete") == 0) {
       // Get the file name to delete
       string filename = input.substr(7); // Remove "delete " from the input string
       // Use the "unlink" function to delete the file on Unix-based systems
       int result = unlink(filename.c_str());
       if (result != 0) {
-        if (errno == ENOENT) {
-          cout << "File does not exist" << endl;
-        } else {
-          cout << "Error deleting file: " << strerror(errno) << endl;
-        }
+        cout << "Error deleting file: " << strerror(errno) << endl;
       } else {
         cout << "File deleted successfully" << endl;
+      }
+    }
+    // Check for "cd" command
+    else if (input.find("cd") == 0) {
+      // Get the directory to change to
+      string directory = input.substr(3); // Remove "cd " from the input string
+      // Use the "chdir" function to change the directory on Unix-based systems
+      int result = chdir(directory.c_str());
+      if (result != 0) {
+        cout << "Error changing directory: " << strerror(errno) << endl;
+      }
+      // Use the "SetCurrentDirectory" function to change the directory on Windows systems
+      else {
+        if (!SetCurrentDirectory(directory.c_str())) {
+          cout << "Error changing directory: " << GetLastError() << endl;
+        }
       }
     } else {
       // Output response
