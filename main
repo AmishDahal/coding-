@@ -1,10 +1,21 @@
 #include <iostream>
 #include <string>
 #include <cstdlib> // For the "system" function
+#include <dirent.h>
 #include <unistd.h> // For the "unlink" and "chdir" functions on Unix-based systems
 #include <vector> // For the "vector" container
+#include <filesystem> // For the "filesystem" library
 
 using namespace std;
+
+void list_files(string path) {
+    // Iterate over all files and directories in the given path
+    for (const auto &entry : std::filesystem::recursive_directory_iterator(path)) {
+        if (entry.is_regular_file()) { // Check if the entry is a regular file
+            std::cout << entry.path() << std::endl; // Print the file path to the console
+        }
+    }
+}
 
 void setColor(string color) {
     // Check if the terminal supports ANSI escape sequences
@@ -49,7 +60,27 @@ void setColor(string color) {
 }
 
 int main() {
-    string input;
+     vector<string> command_history;
+    
+       string input;
+    bool exit_requested = false;
+
+    while (!exit_requested) {
+        // Display prompt and wait for user input
+        cout << "> ";
+        getline(cin, input);
+
+        // Check for "list" command
+        if (input.substr(0, 4) == "list") {
+            string path = input.substr(5);
+            list_files(path);
+        }
+        // Check for "exit" command
+        else if (input == "exit") {
+            exit_requested = true;
+        }
+    }
+    
     vector<string> history;
 
     while (true) {
@@ -73,81 +104,119 @@ int main() {
             cout << "Available commands:\n";
             cout << "  clear - clears the terminal screen\n";
             cout << "  help - displays this help message\n";
-            cout << "  systeminfo - displays information about the system\n";
+            cout << "  list <path> - lists all files in the specified directory\n";
             cout << "  delete <file> - deletes the specified file\n";
             cout << "  cd <directory> - changes the current working directory\n";
             cout << "  color <color> - changes the console color\n";
             cout << "  run <program> - runs the specified program\n";
             cout << "  history - displays a list of previously entered commands\n";
         }
-        // Check for "systeminfo" command
-        else if (input == "systeminfo") {
-            // Execute shell command to display system information
-            system("uname -a");
-        }
-        // Check for "delete" command
-        else if (input.find("delete") == 0) {
-            // Get the file path from the input
-            string filepath = input.substr(7);
-
-            // Delete the file
-            if (unlink(filepath.c_str()) == 0) {
-                cout << "File deleted successfully\n";
-            }
-
-
-
-
-            // Delete the file
-            if (unlink(filepath.c_str()) == 0) {
-                cout << "File deleted successfully\n";
-            }
+        // Check for "list" command
+           else if (input.substr(0, 4) == "list") {
+// Get the path from the input
+string path = input.substr(5);
+// Open the directory at the specified path
+DIR *dir = opendir(path.c_str());
+// Check if the directory was successfully opened
+if (dir) {
+// Loop through each file in the directory
+struct dirent *ent;
+while ((ent = readdir(dir)) != NULL) {
+// Print the name of the file
+cout << ent->d_name << endl;
 }
+// Close the directory
+closedir(dir);
+}
+// If the directory could not be opened, display an error message
+else {
+cout << "Error: could not open directory "" << path << """ << endl;
+}
+}
+
+// Check for "delete" command
+else if (input.substr(0, 6) == "delete") {
+// Get the file name from the input
+string file_name = input.substr(7);
+// Try to delete the file
+if (remove(file_name.c_str()) != 0) {
+// If an error occurred, display an error message
+cout << "Error: could not delete file "" << file_name << """ << endl;
+}
+}
+
 // Check for "cd" command
-else if (input.find("cd") == 0) {
-// Get the directory path from the input
-string dirpath = input.substr(3);
-
-// Change the current working directory using the chdir function
-int result = chdir(dirpath.c_str());
-
-// Check if the directory was changed successfully
-if (result == 0) {
-    cout << "Directory changed successfully\n";
-} else {
-    cout << "Error changing directory\n";
+else if (input.substr(0, 2) == "cd") {
+// Get the directory name from the input
+string dir_name = input.substr(3);
+// Try to change the current working directory
+if (chdir(dir_name.c_str()) != 0) {
+// If an error occurred, display an error message
+cout << "Error: could not change directory to "" << dir_name << """ << endl;
 }
 }
+
 // Check for "color" command
-else if (input.find("color") == 0) {
-// Get the color code from the input
-string color = input.substr(6);
-
-
-// Change the console color using the setColor function
-setColor(color);
+else if (input.substr(0, 5) == "color") {
+// Get the color from the input
+string color_name = input.substr(6);
+// Convert the color name to an integer value
+int color_code;
+if (color_name == "red") {
+color_code = 12;
 }
+else if (color_name == "green") {
+color_code = 10;
+}
+else if (color_name == "blue") {
+color_code = 9;
+}
+else {
+// If the color is not recognized, display an error message and return
+cout << "Error: unrecognized color "" << color_name << """ << endl;
+}
+// Change the console color
+system(("color " + to_string(color_code)).c_str());
+}
+
 // Check for "run" command
-else if (input.find("run") == 0) {
+else if (input.substr(0, 3) == "run") {
 // Get the program name from the input
-string program = input.substr(4);
-
-// Execute the program using the system function
-system(program.c_str());
+string program_name = input.substr(4);
+// Run the program
+system(program_name.c_str());
 }
+
 // Check for "history" command
 else if (input == "history") {
-// Display the history of commands
-cout << "Command History:\n";
-for (string cmd : history) {
-cout << " " << cmd << "\n";
+// Print the list of previously entered commands
+cout << "Command_history:\n";
+for (string cmd : command_history) {
+cout << " " << cmd << endl;
 }
-}
-// Invalid command
-else {
-cout << "Invalid command. Type 'help' for a list of available commands.\n";
 }
 
+// Check for unknown command
+else {
+cout << "Unknown command. Type 'help' to see available commands.\n";
+}
+
+vector<string> command_history;
+
+
+// Add the entered command to the history
+command_history.push_back(input);
+
+const int MAX_COMMAND_HISTORY_SIZE = 10;
+
+
+// Check if the command history has exceeded its maximum size
+if (command_history.size() > MAX_COMMAND_HISTORY_SIZE) {
+// Remove the oldest command from the history
+command_history.erase(command_history.begin());
+}
+
+// Repeat the loop to prompt for the next command
 }
 
 return 0;
