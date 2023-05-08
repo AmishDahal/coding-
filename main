@@ -85,19 +85,17 @@ int main() {
             // Execute shell command to display system information
             system("uname -a");
         }
-        // Check for "delete" command
-        else if (input.find("delete") == 0) {
-            // Get the file path from the input 
-            
-                // Delete the file using the unlink function
-        int result = unlink(filepath.c_str());
-        
-        // Check if the file was deleted successfully
-        if (result == 0) {
-            cout << "File deleted successfully\n";
-        } else {
-            cout << "Error deleting file\n";
-        }
+     else if (input.find("delete") == 0) {
+    // Get the file
+    string filepath = input.substr(7);
+
+    // Delete the file
+    if (unlink(filepath.c_str()) == 0) {
+        cout << "File deleted successfully\n";
+    } else {
+        cout << "Error deleting file\n";
+    }
+}
     }
     // Check for "cd" command
     else if (input.find("cd") == 0) {
