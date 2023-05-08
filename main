@@ -2,91 +2,146 @@
 #include <string>
 #include <cstdlib> // For the "system" function
 #include <unistd.h> // For the "unlink" function on Unix-based systems
-#include <windows.h> // For the color-changing functions on Windows
 
 using namespace std;
 
+void setColor(string color) {
+    // Check if the terminal supports ANSI escape sequences
+    const char* term = getenv("TERM");
+    if (term == nullptr || string(term) == "dumb") {
+        // ANSI escape sequences are not supported
+        return;
+    }
+
+    // Define ANSI escape sequences for different colors
+    const string RESET = "\033[0m";
+    const string BLACK = "\033[30m";
+    const string RED = "\033[31m";
+    const string GREEN = "\033[32m";
+    const string YELLOW = "\033[33m";
+    const string BLUE = "\033[34m";
+    const string MAGENTA = "\033[35m";
+    const string CYAN = "\033[36m";
+    const string WHITE = "\033[37m";
+
+    // Set the console color based on the specified color code
+    if (color == "black") {
+        cout << BLACK;
+    } else if (color == "red") {
+        cout << RED;
+    } else if (color == "green") {
+        cout << GREEN;
+    } else if (color == "yellow") {
+        cout << YELLOW;
+    } else if (color == "blue") {
+        cout << BLUE;
+    } else if (color == "magenta") {
+        cout << MAGENTA;
+    } else if (color == "cyan") {
+        cout << CYAN;
+    } else if (color == "white") {
+        cout << WHITE;
+    } else {
+        // Invalid color code
+        return;
+    }
+}
+
 int main() {
-  string input;
+    string input;
+    vector<string> history;
 
-  while (true) {
-    // Prompt user for input
-    cout << ">> ";
-    getline(cin, input);
+    while (true) {
+        // Prompt user for input
+        setColor("green");
+        cout << ">> ";
+        setColor("white");
+        getline(cin, input);
 
-    // Check for "clear" command
-    if (input == "clear") {
-      // Clear the terminal screen
-      system("cls");
-    }
-    // Check for "help" command
-    else if (input == "help") {
-      // Display list of available commands and their functions
-      cout << "Available commands:\n";
-      cout << "  clear - clears the terminal screen\n";
-      cout << "  help - displays this help message\n";
-      cout << "  systeminfo - displays information about the system\n";
-      cout << "  delete <file> - deletes the specified file\n";
-      cout << "  cd <directory> - changes the current working directory\n";
-      cout << "  color [bw|wb] - changes the console color to black on white or white on black\n";
-      cout << "  run <program> - runs the specified program\n";
-    }
-    // Check for "systeminfo" command
-    else if (input == "systeminfo") {
-      // Execute shell command to display system information
-      system("uname -a");
-    }
-    // Check for "delete" command
-    else if (input.find("delete") == 0) {
-      // Get the file name to delete
-      string filename = input.substr(7); // Remove "delete " from the input string
-      // Use the "unlink" function to delete the file on Unix-based systems
-      int result = unlink(filename.c_str());
-      if (result != 0) {
-        cout << "Error deleting file: " << strerror(errno) << endl;
-      } else {
-        cout << "File deleted successfully" << endl;
-      }
+        // Add the input to the history
+        history.push_back(input);
+
+        // Check for "clear" command
+        if (input == "clear") {
+            // Clear the terminal screen
+            system("clear");
+        }
+        // Check for "help" command
+        else if (input == "help") {
+            // Display list of available commands and their functions
+            cout << "Available commands:\n";
+            cout << "  clear - clears the terminal screen\n";
+            cout << "  help - displays this help message\n";
+            cout << "  systeminfo - displays information about the system\n";
+            cout << "  delete <file> - deletes the specified file\n";
+            cout << "  cd <directory> - changes the current working directory\n";
+            cout << "  color <color> - changes the console color\n";
+            cout << "  run <program> - runs the specified program\n";
+            cout << "  history - displays a list of previously entered commands\n";
+        }
+        // Check for "systeminfo" command
+        else if (input == "systeminfo") {
+            // Execute shell command to display system information
+            system("uname -a");
+        }
+        // Check for "delete" command
+        else if (input.find("delete") == 0) {
+            // Get the file path from the input 
+            
+                // Delete the file using the unlink function
+        int result = unlink(filepath.c_str());
+        
+        // Check if the file was deleted successfully
+        if (result == 0) {
+            cout << "File deleted successfully\n";
+        } else {
+            cout << "Error deleting file\n";
+        }
     }
     // Check for "cd" command
     else if (input.find("cd") == 0) {
-      // Get the directory name to change to
-      string directory = input.substr(3); // Remove "cd " from the input string
-      // Use the SetCurrentDirectory function to change the current working directory on Windows
-      if (SetCurrentDirectory(directory.c_str()) == 0) {
-        cout << "Error changing directory: " << GetLastError() << endl;
-      }
+        // Get the directory path from the input
+        string dirpath = input.substr(3);
+
+        // Change the current working directory using the chdir function
+        int result = chdir(dirpath.c_str());
+
+        // Check if the directory was changed successfully
+        if (result == 0) {
+            cout << "Directory changed successfully\n";
+        } else {
+            cout << "Error changing directory\n";
+        }
     }
     // Check for "color" command
     else if (input.find("color") == 0) {
-      // Get the color code to set
-      string colorCode = input.substr(6); // Remove "color " from the input string
-      // Set the console color to black on white if the code is "bw", and to white on black if the code is "wb"
-      if (colorCode == "bw") {
-        HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-        SetConsoleTextAttribute(hConsole, 15); // set foreground color to white and background color to black
-        system("color 0");
-      } else if (colorCode == "wb") {
-        HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-        SetConsoleTextAttribute(hConsole, 240); // set foreground color to black and background color to white
-        system("color F0");
-      } else {
-        cout << "Invalid color
-code specified. Please use 'bw' or 'wb'." << endl;
-}
-}
-// Check for "run" command
-else if (input.find("run") == 0) {
-// Get the program name to run
-string program = input.substr(4); // Remove "run " from the input string
-// Use the system function to execute the program
-system(program.c_str());
-}
-// If no valid command is found, display an error message
-else {
-cout << "Invalid command. Type 'help' for a list of available commands." << endl;
-}
+        // Get the color code from the input
+        string color = input.substr(6);
+
+        // Change the console color using the setColor function
+        setColor(color);
+    }
+    // Check for "run" command
+    else if (input.find("run") == 0) {
+        // Get the program name from the input
+        string program = input.substr(4);
+
+        // Execute the program using the system function
+        system(program.c_str());
+    }
+    // Check for "history" command
+    else if (input == "history") {
+        // Display the history of commands
+        cout << "Command History:\n";
+        for (string cmd : history) {
+            cout << "  " << cmd << "\n";
+        }
+    }
+    // Invalid command
+    else {
+        cout << "Invalid command. Type 'help' for a list of available commands.\n";
+    }
 }
 
 return 0;
-}
+    
