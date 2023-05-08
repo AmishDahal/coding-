@@ -87,6 +87,25 @@ else {
 cout << "Invalid command. Type 'help' for a list of available commands." << endl;
 }
 }
+    // Initialize ncurses
+    initscr();
+
+    // Turn off input echoing
+    noecho();
+
+    // Enable keypad input
+    keypad(stdscr, TRUE);
+
+    // Print a prompt and wait for user input
+    printw("Enter a command: ");
+    char input[256];
+    getnstr(input, sizeof(input));
+
+    // Print the user's input
+    printw("You entered: %s\n", input);
+
+    // Clean up ncurses
+    endwin();
 
 return 0;
 }
