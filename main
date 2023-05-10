@@ -100,6 +100,7 @@ int main() {
             cout << "  color <color> - changes the console color\n";
             cout << "  run <program> - runs the specified program\n";
             cout << "  history - displays a list of previously entered commands\n";
+             cout << " tasklist - displays the task being performed\n";
         }
         
            
