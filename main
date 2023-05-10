@@ -6,7 +6,7 @@
 
 using namespace std;
 
-void tasklist() {
+void displayProcesses() {
     // Execute the "tasklist" command and get its output
     FILE* stream = popen("tasklist", "r");
     if (stream == NULL) {
@@ -101,6 +101,14 @@ int main() {
             cout << "  run <program> - runs the specified program\n";
             cout << "  history - displays a list of previously entered commands\n";
         }
+        
+           
+         // Check for "tasklist" command
+        else if (input == "tasklist") {
+        // Display the list of processes
+        displayProcesses();
+        }
+        
         // Check for "systeminfo" command
         else if (input == "systeminfo") {
             // Execute shell command to display system information
