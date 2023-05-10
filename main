@@ -6,6 +6,27 @@
 
 using namespace std;
 
+void tasklist() {
+    // Execute the "tasklist" command and get its output
+    FILE* stream = popen("tasklist", "r");
+    if (stream == NULL) {
+        perror("popen");
+        return;
+    }
+    char buffer[1024];
+    string result = "";
+    while (fgets(buffer, 1024, stream) != NULL) {
+        result += buffer;
+    }
+
+    // Display the output to the user
+    cout << result;
+
+    // Close the command output stream
+    pclose(stream);
+}
+
+
 void setColor(string color) {
     // Check if the terminal supports ANSI escape sequences
     const char* term = getenv("TERM");
