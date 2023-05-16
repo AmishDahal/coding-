@@ -3,6 +3,8 @@
 #include <cstdlib> // For the "system" function
 #include <unistd.h> // For the "unlink" and "chdir" functions on Unix-based systems
 #include <vector> // For the "vector" container
+#include <sys/stat.h>  // For the "mkdir" function
+
 
 using namespace std;
 
@@ -25,7 +27,6 @@ void displayProcesses() {
     // Close the command output stream
     pclose(stream);
 }
-
 
 void setColor(string color) {
     // Check if the terminal supports ANSI escape sequences
@@ -95,89 +96,90 @@ int main() {
             cout << "  clear - clears the terminal screen\n";
             cout << "  help - displays this help message\n";
             cout << "  systeminfo - displays information about the system\n";
-            cout << "  delete <file> - deletes the specified file\n";
-            cout << "  cd <directory> - changes the current working directory\n";
-            cout << "  color <color> - changes the console color\n";
-            cout << "  run <program> - runs the specified program\n";
-            cout << "  history - displays a list of previously entered commands\n";
-             cout << " tasklist - displays the task being performed\n";
+            cout << "  delete <file>  - deletes the specified file\n";
+cout << " cd <directory> - changes the current working directory\n";
+cout << " color <color> - changes the console color\n";
+cout << " run <program> - runs the specified program\n";
+cout << " history - displays a list of previously entered commands\n";
+cout << " tasklist - displays the task being performed\n";
+}
+// Check for "tasklist" command
+else if (input == "tasklist") {
+// Display the list of processes
+displayProcesses();
+}
+// Check for "systeminfo" command
+else if (input == "systeminfo") {
+// Execute shell command to display system information
+system("uname -a");
+}
+// Check for "delete" command
+else if (input.find("delete") == 0) {
+// Get the file path from the input
+string filepath = input.substr(7);
+
+        // Delete the file
+        if (unlink(filepath.c_str()) == 0) {
+            cout << "File deleted successfully\n";
         }
-        
-           
-         // Check for "tasklist" command
-        else if (input == "tasklist") {
-        // Display the list of processes
-        displayProcesses();
+    }
+    // Check for "cd" command
+    else if (input.find("cd") == 0) {
+        // Get the directory path from the input
+        string dirpath = input.substr(3);
+
+        // Change the current working directory using the chdir function
+        int result = chdir(dirpath.c_str());
+
+        // Check if the directory was changed successfully
+        if (result == 0) {
+            cout << "Directory changed successfully\n";
+        } else {
+            cout << "Error changing directory\n";
         }
-        
-        // Check for "systeminfo" command
-        else if (input == "systeminfo") {
-            // Execute shell command to display system information
-            system("uname -a");
+    }
+    // Check for "color" command
+    else if (input.find("color") == 0) {
+        // Get the color code from the input
+        string color = input.substr(6);
+
+        // Change the console color using the setColor function
+        setColor(color);
+    }
+    // Check for "run" command
+    else if (input.find("run") == 0) {
+        // Get the program name from the input
+        string program = input.substr(4);
+
+        // Execute the program using the system function
+        system(program.c_str());
+    }
+    // Check for "history" command
+    else if (input == "history") {
+        // Display the history of commands
+        cout << "Command History:\n";
+        for (string cmd : history) {
+            cout << " " << cmd << "\n";
         }
-        // Check for "delete" command
-        else if (input.find("delete") == 0) {
-            // Get the file path from the input
-            string filepath = input.substr(7);
+    }
+    // Check for "mkdir" command
+    else if (input.find("mkdir") == 0) {
+        // Get the directory name from the input
+        string directoryName = input.substr(6);
 
-            // Delete the file
-            if (unlink(filepath.c_str()) == 0) {
-                cout << "File deleted successfully\n";
-            }
+        // Create the directory
+        int status = mkdir(directoryName.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 
-
-
-
-            // Delete the file
-            if (unlink(filepath.c_str()) == 0) {
-                cout << "File deleted successfully\n";
-            }
-}
-// Check for "cd" command
-else if (input.find("cd") == 0) {
-// Get the directory path from the input
-string dirpath = input.substr(3);
-
-// Change the current working directory using the chdir function
-int result = chdir(dirpath.c_str());
-
-// Check if the directory was changed successfully
-if (result == 0) {
-    cout << "Directory changed successfully\n";
-} else {
-    cout << "Error changing directory\n";
-}
-}
-// Check for "color" command
-else if (input.find("color") == 0) {
-// Get the color code from the input
-string color = input.substr(6);
-
-
-// Change the console color using the setColor function
-setColor(color);
-}
-// Check for "run" command
-else if (input.find("run") == 0) {
-// Get the program name from the input
-string program = input.substr(4);
-
-// Execute the program using the system function
-system(program.c_str());
-}
-// Check for "history" command
-else if (input == "history") {
-// Display the history of commands
-cout << "Command History:\n";
-for (string cmd : history) {
-cout << " " << cmd << "\n";
-}
-}
-// Invalid command
-else {
-cout << "Invalid command. Type 'help' for a list of available commands.\n";
-}
-
+        if (status == 0) {
+            cout << "Directory created successfully.\n";
+        } else {
+            cout << "Failed to create directory.\n";
+        }
+    }
+    // Invalid command
+    else {
+        cout << "Invalid command. Type 'help' for a list of available commands.\n";
+    }
 }
 
 return 0;
