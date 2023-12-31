@@ -1,186 +1,209 @@
-#include <iostream>
-#include <string>
-#include <cstdlib> // For the "system" function
-#include <unistd.h> // For the "unlink" and "chdir" functions on Unix-based systems
-#include <vector> // For the "vector" container
-#include <sys/stat.h>  // For the "mkdir" function
+#define _CRT_SECURE_NO_WARNINGS
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-using namespace std;
+#ifdef _WIN32
+    #include <windows.h>
+#else
+    #include <unistd.h>
+    #include <sys/stat.h>
+#endif
+
+const int MAX_INPUT_SIZE = 256;
+const int MAX_HISTORY_SIZE = 256;
 
 void displayProcesses() {
-    // Execute the "tasklist" command and get its output
-    FILE* stream = popen("tasklist", "r");
-    if (stream == NULL) {
-        perror("popen");
-        return;
-    }
-    char buffer[1024];
-    string result = "";
-    while (fgets(buffer, 1024, stream) != NULL) {
-        result += buffer;
-    }
-
-    // Display the output to the user
-    cout << result;
-
-    // Close the command output stream
-    pclose(stream);
+    #ifdef _WIN32
+        system("tasklist");
+    #else
+        system("ps -ef");
+    #endif
 }
 
-void setColor(string color) {
+void clearScreen() {
+    #ifdef _WIN32
+        system("cls");
+    #else
+        system("clear");
+    #endif
+}
+
+
+void compressFile(const char* inputFileName, const char* outputFileName) {
+    FILE *inputFile = fopen(inputFileName, "r");
+    if (inputFile == NULL) {
+        printf("Unable to open file %s for reading.\n", inputFileName);
+        return;
+    }
+
+    FILE *outputFile = fopen(outputFileName, "wb");
+    if (outputFile == NULL) {
+        printf("Unable to create file %s for writing.\n", outputFileName);
+        fclose(inputFile);
+        return;
+    }
+
+    char input[MAX_INPUT_SIZE];
+    fread(input, sizeof(char), MAX_INPUT_SIZE, inputFile);
+
+    int len = strlen(input);
+    char output[MAX_INPUT_SIZE * 2]; // Allocate space for compressed string
+
+    int count = 1;
+    int index = 0;
+
+    for (int i = 0; i < len; i++) {
+        output[index++] = input[i]; // Store the character
+
+        while (i + 1 < len && input[i] == input[i + 1]) {
+            count++;
+            i++;
+        }
+
+        // Store the count of consecutive characters
+        if (count > 1) {
+            int temp = sprintf(output + index, "%d", count);
+            index += temp;
+            count = 1;
+        }
+    }
+    output[index] = '\0'; // Terminate the string
+
+    fwrite(output, sizeof(char), strlen(output), outputFile);
+
+    fclose(inputFile);
+    fclose(outputFile);
+
+    printf("File compressed successfully to %s\n", outputFileName);
+}
+
+void setColor(const char* color) {
     // Check if the terminal supports ANSI escape sequences
     const char* term = getenv("TERM");
-    if (term == nullptr || string(term) == "dumb") {
+    if (term == NULL || strcmp(term, "dumb") == 0) {
         // ANSI escape sequences are not supported
         return;
     }
 
     // Define ANSI escape sequences for different colors
-    const string RESET = "\033[0m";
-    const string BLACK = "\033[30m";
-    const string RED = "\033[31m";
-    const string GREEN = "\033[32m";
-    const string YELLOW = "\033[33m";
-    const string BLUE = "\033[34m";
-    const string MAGENTA = "\033[35m";
-    const string CYAN = "\033[36m";
-    const string WHITE = "\033[37m";
+    const char* RESET = "\033[0m";
+    const char* COLORS[] = {
+        "\033[30m", "\033[31m", "\033[32m", "\033[33m", 
+        "\033[34m", "\033[35m", "\033[36m", "\033[37m"
+    };
+    const char* colorNames[] = { "black", "red", "green", "yellow", "blue", "magenta", "cyan", "white" };
 
-    // Set the console color based on the specified color code
-    if (color == "black") {
-        cout << BLACK;
-    } else if (color == "red") {
-        cout << RED;
-    } else if (color == "green") {
-        cout << GREEN;
-    } else if (color == "yellow") {
-        cout << YELLOW;
-    } else if (color == "blue") {
-        cout << BLUE;
-    } else if (color == "magenta") {
-        cout << MAGENTA;
-    } else if (color == "cyan") {
-        cout << CYAN;
-    } else if (color == "white") {
-        cout << WHITE;
-    } else {
-        // Invalid color code
-        return;
+    // Find and set the console color based on the specified color name
+    for (int i = 0; i < 8; i++) {
+        if (strcmp(color, colorNames[i]) == 0) {
+            printf("%s", COLORS[i]);
+            return;
+        }
     }
+
+    // Invalid color name
+    printf("Invalid color: %s\n", color);
+}
+
+void printHelp() {
+    printf("Available commands:\n");
+    printf("  clear - clears the terminal screen\n");
+    printf("  help - displays this help message\n");
+    printf("  systeminfo - displays information about the system\n");
+    printf("  delete <file> - deletes the specified file\n");
+    printf("  cd <directory> - changes the current working directory\n");
+    printf("  color <color> - changes the console color\n");
+    printf("  run <program> - runs the specified program\n");
+    printf("  history - displays a list of previously entered commands\n");
+    printf("  tasklist - displays the task being performed\n");
+    printf("  mkdir <directory> - creates a new directory\n");
+}
+
+void deleteFile(const char* filePath) {
+    remove(filePath);
+}
+
+void changeDirectory(const char* dirPath) {
+    #ifdef _WIN32
+        SetCurrentDirectory(dirPath);
+    #else
+        chdir(dirPath);
+    #endif
+}
+
+void createDirectory(const char* dirName) {
+    #ifdef _WIN32
+        CreateDirectory(dirName, NULL);
+    #else
+        mkdir(dirName, 0777);
+    #endif
 }
 
 int main() {
-    string input;
-    vector<string> history;
+    char input[MAX_INPUT_SIZE];
+    char history[MAX_HISTORY_SIZE][MAX_INPUT_SIZE];
+    int historyIndex = 0;
 
-    while (true) {
-        // Prompt user for input
-        setColor("green");
-        cout << ">> ";
-        setColor("white");
-        getline(cin, input);
+    while (1) {
+        printf(">> ");
+        fgets(input, sizeof(input), stdin);
+        input[strcspn(input, "\n")] = '\0';
 
-        // Add the input to the history
-        history.push_back(input);
+        strcpy(history[historyIndex], input);
+        historyIndex++;
 
-        // Check for "clear" command
-        if (input == "clear") {
-            // Clear the terminal screen
-            system("clear");
+        if (strcmp(input, "clear") == 0) {
+            clearScreen();
         }
-        // Check for "help" command
-        else if (input == "help") {
-            // Display list of available commands and their functions
-            cout << "Available commands:\n";
-            cout << "  clear - clears the terminal screen\n";
-            cout << "  help - displays this help message\n";
-            cout << "  systeminfo - displays information about the system\n";
-            cout << "  delete <file>  - deletes the specified file\n";
-cout << " cd <directory> - changes the current working directory\n";
-cout << " color <color> - changes the console color\n";
-cout << " run <program> - runs the specified program\n";
-cout << " history - displays a list of previously entered commands\n";
-cout << " tasklist - displays the task being performed\n";
-}
-// Check for "tasklist" command
-else if (input == "tasklist") {
-// Display the list of processes
-displayProcesses();
-}
-// Check for "systeminfo" command
-else if (input == "systeminfo") {
-// Execute shell command to display system information
-system("uname -a");
-}
-// Check for "delete" command
-else if (input.find("delete") == 0) {
-// Get the file path from the input
-string filepath = input.substr(7);
-
-        // Delete the file
-        if (unlink(filepath.c_str()) == 0) {
-            cout << "File deleted successfully\n";
+        else if (strcmp(input, "help") == 0) {
+            printHelp();
         }
-    }
-    // Check for "cd" command
-    else if (input.find("cd") == 0) {
-        // Get the directory path from the input
-        string dirpath = input.substr(3);
+        else if (strcmp(input, "tasklist") == 0) {
+            displayProcesses();
+        }
+        else if (strncmp(input, "delete", 6) == 0) {
+            char filePath[MAX_INPUT_SIZE];
+            strcpy(filePath, input + 7);
+            deleteFile(filePath);
+        }
+        else if (strncmp(input, "cd", 2) == 0) {
+            char dirPath[MAX_INPUT_SIZE];
+            strcpy(dirPath, input + 3);
+            changeDirectory(dirPath);
+        }
+        else if (strncmp(input, "color", 5) == 0) {
+            const char* color = input + 6;
+            setColor(color);
+        }
+        else if (strncmp(input, "run", 3) == 0) {
+            const char* program = input + 4;
+            system(program);
+        }
+        else if (strcmp(input, "history") == 0) {
+            printf("Command History:\n");
+            for (int i = 0; i < historyIndex; i++) {
+                printf(" %s\n", history[i]);
+            }
+        }
+        else if (strncmp(input, "mkdir", 5) == 0) {
+            const char* dirName = input + 6;
+            createDirectory(dirName);
+        }
 
-        // Change the current working directory using the chdir function
-        int result = chdir(dirpath.c_str());
-
-        // Check if the directory was changed successfully
-        if (result == 0) {
-            cout << "Directory changed successfully\n";
+ else if (strncmp(input, "compress", 8) == 0) {
+        char inputFile[MAX_INPUT_SIZE], outputFile[MAX_INPUT_SIZE];
+        if (sscanf(input, "compress %s to %s", inputFile, outputFile) != 2) {
+            printf("Invalid syntax. Usage: compress <input_file> to <output_file>\n");
         } else {
-            cout << "Error changing directory\n";
+            compressFile(inputFile, outputFile);
         }
     }
-    // Check for "color" command
-    else if (input.find("color") == 0) {
-        // Get the color code from the input
-        string color = input.substr(6);
-
-        // Change the console color using the setColor function
-        setColor(color);
-    }
-    // Check for "run" command
-    else if (input.find("run") == 0) {
-        // Get the program name from the input
-        string program = input.substr(4);
-
-        // Execute the program using the system function
-        system(program.c_str());
-    }
-    // Check for "history" command
-    else if (input == "history") {
-        // Display the history of commands
-        cout << "Command History:\n";
-        for (string cmd : history) {
-            cout << " " << cmd << "\n";
+        else {
+            printf("Invalid command. Type 'help' to see available commands.\n");
         }
     }
-    // Check for "mkdir" command
-    else if (input.find("mkdir") == 0) {
-        // Get the directory name from the input
-        string directoryName = input.substr(6);
 
-        // Create the directory
-        int status = mkdir(directoryName.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-
-        if (status == 0) {
-            cout << "Directory created successfully.\n";
-        } else {
-            cout << "Failed to create directory.\n";
-        }
-    }
-    // Invalid command
-    else {
-        cout << "Invalid command. Type 'help' for a list of available commands.\n";
-    }
-}
-
-return 0;
+    return 0;
 }
